@@ -16,12 +16,37 @@ type ReqVerbsObject = {
 };
 
 export function reqVerbsHandler(methodsObject: ReqVerbsObject) {
-   return function returnFunction(req: NextApiRequest, res: NextApiResponse) {
-      const reqMethod = req.method.toLocaleLowerCase();
-      const methodAllowed = Object.hasOwn(methodsObject, reqMethod);
+   return function (req: NextApiRequest, res: NextApiResponse) {
+      // checking if the request method is allowed
+      const reqMethod: string = req.method.toLocaleLowerCase();
+      const methodAllowed: boolean = Object.hasOwn(methodsObject, reqMethod);
+      const middlewares: Function[] = methodsObject[reqMethod].middlewares;
+      const callback: Function = methodsObject[reqMethod].callback;
       if (!methodAllowed) {
-         return res.status(405).end("No podés llamar a la api con este método");
+         res.status(405).end("No podés llamar a la api con este método");
+         return;
       }
-      methodsObject[reqMethod].callback(req, res);
+
+      //executes middlewares
+      if (middlewares) {
+         Promise.all(
+            middlewares.map(async (fn) => {
+               const { modifiedReq, modifiedRes } = await fn(req, res);
+               req = modifiedReq;
+               res = modifiedRes;
+            })
+         );
+      }
+      //executes callback
+      callback(req, res);
    };
+}
+
+export function testMiddle(req, res) {
+   const modifiedReq = req;
+   const modifiedRes = res;
+
+   modifiedReq.body.mod = "Mod";
+   modifiedReq.query.mod = "Mod";
+   return { modifiedReq, modifiedRes };
 }
