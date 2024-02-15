@@ -13,8 +13,14 @@ export class Auth {
       this.email = email;
    }
 
-   getData() {
+   getData(id: boolean = true) {
+      //has the option to return data with or withoit the id prop. Useful for savig the object in the database
+      if (id) {
+         const data = Object.fromEntries(Object.entries(this));
+         return data;
+      }
       const data = Object.fromEntries(Object.entries(this));
+      delete data.id;
       return data;
    }
    static async findOrCreateByEmail(email: string) {
@@ -34,7 +40,7 @@ export class Auth {
       this.codeExpirationDate.setMinutes(
          this.codeExpirationDate.getMinutes() + 10
       );
-      const data = this.getData();
+      const data = this.getData(false);
 
       await collection.doc(this.id).update(data);
       return data;
