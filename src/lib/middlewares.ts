@@ -107,6 +107,7 @@ export function reqVerbsHandler(methodsObject: ReqVerbsObject) {
    };
 }
 
+//middlewares
 //all middlewares must return modifiedReq and modifiedRes
 export function inputChecker(req, res, config) {
    const { inputChecker } = config;
@@ -123,40 +124,41 @@ export function inputChecker(req, res, config) {
 
 //helpers
 function runChecker(checker, inputValueToCheck, upperLevel?) {
-   //checks every prop passed in the checker against the values in req(inputValueToCheck)
+   //upperLevel is a helper for better error messages
+   //checks every prop passed in the checker(config) against the values in req(inputValueToCheck)
    for (const key in checker) {
       if (Object.hasOwn(inputCheckerMap, key)) {
          try {
             //if the property exists in the map object, it calls it's asosiated function
             inputCheckerMap[key](inputValueToCheck, checker[key]);
-            return;
          } catch (error) {
             //every function in the map object throws an error y the check doesn't pass
             //this error is handled here and a message is added for later handling
             throw new Error(
-               `Request input error. ${JSON.stringify(upperLevel)}`
+               `Request input error. ${upperLevel} ${error.message}`
             );
          }
+      } else {
+         //else, it calls itself again until true
+         runChecker(checker[key], inputValueToCheck[key], key);
       }
-      //else, it calls itself again until true
-      runChecker(checker[key], inputValueToCheck[key], checker);
    }
 }
 
 const inputCheckerMap = {
    required: (input, check) => {
       if (check == true && !input) {
-         throw new Error();
+         throw new Error("Is required");
       }
    },
    type: (input, check) => {
       if (input && typeof input !== check) {
-         throw new Error();
+         throw new Error(`must be ${check}`);
       }
    },
    value: (input, check) => {
       if (input && input !== check) {
-         throw new Error();
+         throw new Error(`must be ${check}`);
       }
    },
 };
