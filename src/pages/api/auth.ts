@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { sendAuthCode } from "src/controllers/auth-controller";
-import { inputChecker, reqVerbsHandler } from "src/lib/middlewares";
+import { sendAuthCode, getToken } from "src/controllers/auth-controller";
+import { inputChecker, reqVerbsHandler } from "src/lib/middlewares/middlewares";
 
 async function getHandler(req: NextApiRequest, res: NextApiResponse) {
    //returns authentication code
@@ -11,26 +11,35 @@ async function getHandler(req: NextApiRequest, res: NextApiResponse) {
    return;
 }
 async function postHandler(req: NextApiRequest, res: NextApiResponse) {
-   const { query } = req;
-   const { email, code, message } = query;
-   res.send(message);
+   const { body } = req;
+   const { email, code } = body;
+   try {
+      const token = await getToken(email, code);
+      res.send({ token });
+   } catch (error) {
+      res.send(error.message);
+   }
 }
 
 export default reqVerbsHandler({
    get: {
       callback: getHandler,
+      middlewares: [inputChecker],
+      config: {
+         inputChecker: {
+            query: {
+               email: {
+                  required: true,
+               },
+            },
+         },
+      },
    },
    post: {
       callback: postHandler,
       middlewares: [inputChecker],
       config: {
          inputChecker: {
-            query: {
-               message: {
-                  required: true,
-                  type: "string",
-               },
-            },
             body: {
                email: {
                   required: true,

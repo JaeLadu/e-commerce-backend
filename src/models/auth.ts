@@ -23,15 +23,33 @@ export class Auth {
       delete data.id;
       return data;
    }
-   static async findOrCreateByEmail(email: string) {
+
+   setData(data) {
+      Object.assign(this, data);
+   }
+
+   static async findByEmail(email: string) {
       let docsList = await collection.where("email", "==", email).get();
-      let doc;
       if (docsList.empty) {
-         doc = await collection.add({ email });
-      } else {
-         doc = docsList[0];
+         return false;
       }
-      return new Auth(doc.id, email);
+      const doc = docsList.docs[0];
+
+      const auth = new Auth(doc.id, email);
+      auth.setData(doc.data());
+
+      return auth;
+   }
+
+   static async findOrCreateByEmail(email: string): Promise<Auth> {
+      let doc;
+      const found = await Auth.findByEmail(email);
+
+      if (!found) {
+         doc = await collection.add({ email });
+         return new Auth(doc.id, email);
+      }
+      return found;
    }
 
    async createCode() {
