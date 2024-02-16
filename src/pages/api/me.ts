@@ -1,12 +1,10 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getUser } from "src/controllers/user-controller";
+import { getUser, updateUser } from "src/controllers/user-controller";
 import { reqVerbsHandler, tokenChecker } from "src/lib/middlewares/middlewares";
 
-async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function getHandler(req: NextApiRequest, res: NextApiResponse) {
    const {
-      body: {
-         info: { userId },
-      },
+      body: { userId },
    } = req;
 
    const userInfo = await getUser(userId);
@@ -17,9 +15,25 @@ async function handler(req: NextApiRequest, res: NextApiResponse) {
    res.send(userInfo);
 }
 
+async function patchHandler(req: NextApiRequest, res: NextApiResponse) {
+   const { body } = req;
+   const { userId } = body;
+   try {
+      updateUser(userId, body);
+      res.status(200).end();
+      return;
+   } catch (error) {
+      res.status(404).end(error.message);
+   }
+}
+
 export default reqVerbsHandler({
    get: {
-      callback: handler,
+      callback: getHandler,
+      middlewares: [tokenChecker],
+   },
+   patch: {
+      callback: patchHandler,
       middlewares: [tokenChecker],
    },
 });

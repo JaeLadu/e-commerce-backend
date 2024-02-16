@@ -16,6 +16,14 @@ export class User extends Model {
       return new User(user.id, email);
    }
 
+   async push(data?) {
+      if (data) {
+         this.setData(data);
+      }
+      await collection.doc(this.id).update(data);
+      return;
+   }
+
    static async getById(id: string) {
       const doc = await collection.doc(id).get();
 

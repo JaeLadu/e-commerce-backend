@@ -73,9 +73,9 @@ export function tokenChecker(req, res) {
    const tokenInfo = verifyToken(token);
 
    try {
-      modifiedReq.body["info"] = tokenInfo;
+      modifiedReq.body = { ...modifiedReq.body, ...tokenInfo };
    } catch (e) {
-      modifiedReq.body = { info: tokenInfo };
+      modifiedReq.body = tokenInfo;
    }
 
    return { modifiedReq, modifiedRes };
