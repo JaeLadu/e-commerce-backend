@@ -1,31 +1,33 @@
 import { firestoreDB } from "src/lib/firestore";
+import { Model } from "./baseModel";
+import { User } from "./user";
 
-const collection = firestoreDB.collection("auth");
+const collection = firestoreDB.collection("auths");
 
-export class Auth {
-   id: string;
-   email: string;
+export class Auth extends Model {
    code?: number;
    codeExpirationDate?: Date;
+   userId: string;
 
-   constructor(id: string, email: string) {
-      this.id = id;
-      this.email = email;
+   constructor(id: string, email: string, data?) {
+      super(id, email, data);
    }
 
-   getData(id: boolean = true) {
-      //has the option to return data with or withoit the id prop. Useful for savig the object in the database
-      if (id) {
-         const data = Object.fromEntries(Object.entries(this));
-         return data;
-      }
-      const data = Object.fromEntries(Object.entries(this));
-      delete data.id;
-      return data;
+   static async create(email: string) {
+      const user = await User.findOrCreateByEmail(email);
+      const authDocReference = await collection.add({ email, userId: user.id });
+      const auth = new Auth(authDocReference.id, email, { userId: user.id });
+
+      return auth;
    }
 
-   setData(data) {
-      Object.assign(this, data);
+   static async getById(id: string) {
+      const doc = await collection.doc(id).get();
+      if (!doc.exists) return false;
+
+      const auth = new Auth(doc.id, doc.data().email, doc.data());
+
+      return auth;
    }
 
    static async findByEmail(email: string) {
@@ -35,19 +37,16 @@ export class Auth {
       }
       const doc = docsList.docs[0];
 
-      const auth = new Auth(doc.id, email);
-      auth.setData(doc.data());
+      const auth = new Auth(doc.id, email, doc.data());
 
       return auth;
    }
 
    static async findOrCreateByEmail(email: string): Promise<Auth> {
-      let doc;
       const found = await Auth.findByEmail(email);
 
       if (!found) {
-         doc = await collection.add({ email });
-         return new Auth(doc.id, email);
+         return await Auth.create(email);
       }
       return found;
    }

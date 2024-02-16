@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { ReqVerbsObject, runChecker } from "./helpers";
+import { verifyToken } from "../jwt";
 
 export function reqVerbsHandler(methodsObject: ReqVerbsObject) {
    //function that is returned for vercel to call
@@ -43,7 +44,7 @@ export function reqVerbsHandler(methodsObject: ReqVerbsObject) {
 }
 
 //middlewares
-//all middlewares must return modifiedReq and modifiedRes
+//all middlewares must return modifiedReq and modifiedRes or errors with message if something goes wrong
 export function inputChecker(req, res, config) {
    const { inputChecker } = config;
    if (!inputChecker) {
@@ -54,5 +55,28 @@ export function inputChecker(req, res, config) {
 
    const modifiedReq = req;
    const modifiedRes = res;
+   return { modifiedReq, modifiedRes };
+}
+
+export function tokenChecker(req, res) {
+   const modifiedReq = req;
+   const modifiedRes = res;
+   const {
+      headers: { authorization },
+   } = req;
+   const contents = authorization.split(" ");
+   const bearer = contents[0] == "bearer";
+   const token = contents[1];
+
+   if (!bearer) throw new Error('Authorization must be: "bearer token"');
+
+   const tokenInfo = verifyToken(token);
+
+   try {
+      modifiedReq.body["info"] = tokenInfo;
+   } catch (e) {
+      modifiedReq.body = { info: tokenInfo };
+   }
+
    return { modifiedReq, modifiedRes };
 }

@@ -19,7 +19,7 @@ export async function sendAuthCode(email: string) {
 export async function getToken(email: string, codeToCheck: number) {
    const auth = await Auth.findByEmail(email);
    if (!auth) throw new Error("User doesn't exist");
-   const { code, codeExpirationDate, id } = auth.getData();
+   const { code, codeExpirationDate, userId } = auth.getData();
 
    if (!code) throw new Error("No code available");
    if (code !== codeToCheck) throw new Error("Wrong code");
@@ -28,5 +28,5 @@ export async function getToken(email: string, codeToCheck: number) {
    const expired = parsedExpirationDate < new Date();
    if (expired) throw new Error("Code expired!");
 
-   return createToken({ email, userId: id });
+   return createToken({ email, userId });
 }
