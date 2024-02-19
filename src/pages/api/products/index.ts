@@ -1,15 +1,21 @@
 import { NextApiRequest, NextApiResponse } from "next";
+import { saveNewProduct } from "src/controllers/product-controller";
 import {
    inputChecker,
    reqVerbsHandler,
    tokenChecker,
 } from "src/lib/middlewares/middlewares";
 
-function postHandler(req: NextApiRequest, res: NextApiResponse) {
+async function postHandler(req: NextApiRequest, res: NextApiResponse) {
    const {
       body: { userId, productName, extraData },
    } = req;
-   res.send({ userId, productName, extraData });
+   try {
+      const product = await saveNewProduct(productName, userId, extraData);
+      res.send({ product });
+   } catch (error) {
+      res.status(400).send(error.message);
+   }
 }
 
 export default reqVerbsHandler({
